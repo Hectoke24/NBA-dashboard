@@ -1,58 +1,30 @@
-import {
-  BanknotesIcon,
-  ClockIcon,
-  UserGroupIcon,
-  InboxIcon,
-} from '@heroicons/react/24/outline';
-import { lusitana } from '@/app/ui/fonts';
+import { Shield, Users, CalendarDays, Trophy } from 'lucide-react';
 
-const iconMap = {
-  collected: BanknotesIcon,
-  customers: UserGroupIcon,
-  pending: ClockIcon,
-  invoices: InboxIcon,
+type CardProps = {
+  title: string;
+  value: string | number;
+  icon: React.ElementType;
 };
 
-export default async function CardWrapper() {
+function Card({ title, value, icon: Icon }: CardProps) {
   return (
-    <>
-      {/* NOTE: Uncomment this code in Chapter 9 */}
-
-      {/* <Card title="Collected" value={totalPaidInvoices} type="collected" />
-      <Card title="Pending" value={totalPendingInvoices} type="pending" />
-      <Card title="Total Invoices" value={numberOfInvoices} type="invoices" />
-      <Card
-        title="Total Customers"
-        value={numberOfCustomers}
-        type="customers"
-      /> */}
-    </>
+    <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-gray-500">{title}</p>
+        <Icon className="h-5 w-5 text-gray-400" />
+      </div>
+      <p className="mt-3 text-3xl font-semibold text-gray-800">{value}</p>
+    </div>
   );
 }
 
-export function Card({
-  title,
-  value,
-  type,
-}: {
-  title: string;
-  value: number | string;
-  type: 'invoices' | 'customers' | 'pending' | 'collected';
-}) {
-  const Icon = iconMap[type];
-
+export default function DashboardCards() {
   return (
-    <div className="rounded-xl bg-gray-50 p-2 shadow-sm">
-      <div className="flex p-4">
-        {Icon ? <Icon className="h-5 w-5 text-gray-700" /> : null}
-        <h3 className="ml-2 text-sm font-medium">{title}</h3>
-      </div>
-      <p
-        className={`${lusitana.className}
-          truncate rounded-xl bg-white px-4 py-8 text-center text-2xl`}
-      >
-        {value}
-      </p>
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <Card title="Equipos" value={30} icon={Shield} />
+      <Card title="Jugadores destacados" value={120} icon={Users} />
+      <Card title="Próximos partidos" value={12} icon={CalendarDays} />
+      <Card title="Líderes de conferencia" value={2} icon={Trophy} />
     </div>
   );
 }

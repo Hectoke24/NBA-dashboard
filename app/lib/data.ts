@@ -1,218 +1,60 @@
-import postgres from 'postgres';
-import {
-  CustomerField,
-  CustomersTableType,
-  InvoiceForm,
-  InvoicesTable,
-  LatestInvoiceRaw,
-  Revenue,
-} from './definitions';
-import { formatCurrency } from './utils';
+import { Team, Player, Game, Standing } from './definitions';  
 
-const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
+export const teams = [
+  { id: 1, name: 'Lakers', city: 'Los Angeles', conference: 'West', wins: 48, losses: 34 },
+  { id: 2, name: 'Celtics', city: 'Boston', conference: 'East', wins: 54, losses: 28 },
+  { id: 3, name: 'Warriors', city: 'Golden State', conference: 'West', wins: 46, losses: 36 },
+  { id: 4, name: 'Bucks', city: 'Milwaukee', conference: 'East', wins: 58, losses: 24 },
+  { id: 5, name: 'Heat', city: 'Miami', conference: 'East', wins: 44, losses: 38 },
+  { id: 6, name: 'Nets', city: 'Brooklyn', conference: 'East', wins: 42, losses: 40 },
+  { id: 7, name: 'Clippers', city: 'Los Angeles', conference: 'West', wins: 40, losses: 42 },
+  { id: 8, name: 'Suns', city: 'Phoenix', conference: 'West', wins: 38, losses: 44 },
+  { id: 9, name: 'Jazz', city: 'Utah', conference: 'West', wins: 36, losses: 46 },
+  { id: 10, name: 'Mavericks', city: 'Dallas', conference: 'West', wins: 34, losses: 48 },
+  { id: 11, name: 'Raptors', city: 'Toronto', conference: 'East', wins: 32, losses: 50 },
+  { id: 12, name: '76ers', city: 'Philadelphia', conference: 'East', wins: 30, losses: 52 },
+];
 
-export async function fetchRevenue() {
-  try {
-    // Artificially delay a response for demo purposes.
-    // Don't do this in production :)
+export const players = [
+  { id: 1, name: 'LeBron James', team: 'Lakers', position: 'SF', ppg: 25.4 },
+  { id: 2, name: 'Stephen Curry', team: 'Warriors', position: 'PG', ppg: 27.9 },
+  { id: 3, name: 'Jayson Tatum', team: 'Celtics', position: 'SF', ppg: 26.8 },
+  { id: 4, name: 'Giannis Antetokounmpo', team: 'Bucks', position: 'PF', ppg: 29.1 },
+  { id: 5, name: 'Jimmy Butler', team: 'Warriors', position: 'SG', ppg: 22.3 },
+  { id: 6, name: 'Kevin Durant', team: 'Rockets', position: 'SF', ppg: 27.0 },
+  { id: 7, name: 'Kawhi Leonard', team: 'Clippers', position: 'SF', ppg: 24.5 },
+  { id: 8, name: 'Devin Booker', team: 'Suns', position: 'SG', ppg: 26.1 },
+  { id: 9, name: 'Donovan Mitchell', team: 'Cleveland', position: 'SG', ppg: 24.7 },
+  { id: 10, name: 'Luka Dončić', team: 'Lakers', position: 'PG', ppg: 33.3 },
+  { id: 11, name: 'Zion Williamson', team: 'Pelicans', position: 'PF', ppg: 24.0 },
+  { id: 12, name: 'Ja Morant', team: 'Grizzlies', position: 'PG', ppg: 24.8 },
 
-    // console.log('Fetching revenue data...');
-    // await new Promise((resolve) => setTimeout(resolve, 3000));
+];
 
-    const data = await sql<Revenue[]>`SELECT * FROM revenue`;
+export const games = [
+  { id: 1, awayTeam: 'Lakers', homeTeam: 'Celtics', date: '2026-03-27', time: '19:30' },
+  { id: 2, awayTeam: 'Warriors', homeTeam: 'Bucks', date: '2026-03-28', time: '21:00' },
+  { id: 3, awayTeam: 'Celtics', homeTeam: 'Heat', date: '2026-03-29', time: '18:00' },
+  { id: 4, awayTeam: 'Bucks', homeTeam: 'Nets', date: '2026-03-30', time: '20:00' },
+  { id: 5, awayTeam: 'Clippers', homeTeam: 'Suns', date: '2026-03-31', time: '19:00' },
+  { id: 6, awayTeam: 'Suns', homeTeam: 'Jazz', date: '2026-04-01', time: '21:30' },
+  { id: 7, awayTeam: 'Jazz', homeTeam: 'Mavericks', date: '2026-04-02', time: '20:00' },
+  { id: 8, awayTeam: 'Mavericks', homeTeam: 'Raptors', date: '2026-04-03', time: '19:30' },
+  { id: 9, awayTeam: 'Raptors', homeTeam: '76ers', date: '2026-04-04', time: '18:00' },
+  { id: 10, awayTeam: '76ers', homeTeam: 'Lakers', date: '2026-04-05', time: '20:00' },
+];
 
-    // console.log('Data fetch completed after 3 seconds.');
-
-    return data;
-  } catch (error) {
-    console.error('Database Error:', error);
-    throw new Error('Failed to fetch revenue data.');
-  }
-}
-
-export async function fetchLatestInvoices() {
-  try {
-    const data = await sql<LatestInvoiceRaw[]>`
-      SELECT invoices.amount, customers.name, customers.image_url, customers.email, invoices.id
-      FROM invoices
-      JOIN customers ON invoices.customer_id = customers.id
-      ORDER BY invoices.date DESC
-      LIMIT 5`;
-
-    const latestInvoices = data.map((invoice) => ({
-      ...invoice,
-      amount: formatCurrency(invoice.amount),
-    }));
-    return latestInvoices;
-  } catch (error) {
-    console.error('Database Error:', error);
-    throw new Error('Failed to fetch the latest invoices.');
-  }
-}
-
-export async function fetchCardData() {
-  try {
-    // You can probably combine these into a single SQL query
-    // However, we are intentionally splitting them to demonstrate
-    // how to initialize multiple queries in parallel with JS.
-    const invoiceCountPromise = sql`SELECT COUNT(*) FROM invoices`;
-    const customerCountPromise = sql`SELECT COUNT(*) FROM customers`;
-    const invoiceStatusPromise = sql`SELECT
-         SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END) AS "paid",
-         SUM(CASE WHEN status = 'pending' THEN amount ELSE 0 END) AS "pending"
-         FROM invoices`;
-
-    const data = await Promise.all([
-      invoiceCountPromise,
-      customerCountPromise,
-      invoiceStatusPromise,
-    ]);
-
-    const numberOfInvoices = Number(data[0][0].count ?? '0');
-    const numberOfCustomers = Number(data[1][0].count ?? '0');
-    const totalPaidInvoices = formatCurrency(data[2][0].paid ?? '0');
-    const totalPendingInvoices = formatCurrency(data[2][0].pending ?? '0');
-
-    return {
-      numberOfCustomers,
-      numberOfInvoices,
-      totalPaidInvoices,
-      totalPendingInvoices,
-    };
-  } catch (error) {
-    console.error('Database Error:', error);
-    throw new Error('Failed to fetch card data.');
-  }
-}
-
-const ITEMS_PER_PAGE = 6;
-export async function fetchFilteredInvoices(
-  query: string,
-  currentPage: number,
-) {
-  const offset = (currentPage - 1) * ITEMS_PER_PAGE;
-
-  try {
-    const invoices = await sql<InvoicesTable[]>`
-      SELECT
-        invoices.id,
-        invoices.amount,
-        invoices.date,
-        invoices.status,
-        customers.name,
-        customers.email,
-        customers.image_url
-      FROM invoices
-      JOIN customers ON invoices.customer_id = customers.id
-      WHERE
-        customers.name ILIKE ${`%${query}%`} OR
-        customers.email ILIKE ${`%${query}%`} OR
-        invoices.amount::text ILIKE ${`%${query}%`} OR
-        invoices.date::text ILIKE ${`%${query}%`} OR
-        invoices.status ILIKE ${`%${query}%`}
-      ORDER BY invoices.date DESC
-      LIMIT ${ITEMS_PER_PAGE} OFFSET ${offset}
-    `;
-
-    return invoices;
-  } catch (error) {
-    console.error('Database Error:', error);
-    throw new Error('Failed to fetch invoices.');
-  }
-}
-
-export async function fetchInvoicesPages(query: string) {
-  try {
-    const data = await sql`SELECT COUNT(*)
-    FROM invoices
-    JOIN customers ON invoices.customer_id = customers.id
-    WHERE
-      customers.name ILIKE ${`%${query}%`} OR
-      customers.email ILIKE ${`%${query}%`} OR
-      invoices.amount::text ILIKE ${`%${query}%`} OR
-      invoices.date::text ILIKE ${`%${query}%`} OR
-      invoices.status ILIKE ${`%${query}%`}
-  `;
-
-    const totalPages = Math.ceil(Number(data[0].count) / ITEMS_PER_PAGE);
-    return totalPages;
-  } catch (error) {
-    console.error('Database Error:', error);
-    throw new Error('Failed to fetch total number of invoices.');
-  }
-}
-
-export async function fetchInvoiceById(id: string) {
-  try {
-    const data = await sql<InvoiceForm[]>`
-      SELECT
-        invoices.id,
-        invoices.customer_id,
-        invoices.amount,
-        invoices.status
-      FROM invoices
-      WHERE invoices.id = ${id};
-    `;
-
-    const invoice = data.map((invoice) => ({
-      ...invoice,
-      // Convert amount from cents to dollars
-      amount: invoice.amount / 100,
-    }));
-
-    return invoice[0];
-  } catch (error) {
-    console.error('Database Error:', error);
-    throw new Error('Failed to fetch invoice.');
-  }
-}
-
-export async function fetchCustomers() {
-  try {
-    const customers = await sql<CustomerField[]>`
-      SELECT
-        id,
-        name
-      FROM customers
-      ORDER BY name ASC
-    `;
-
-    return customers;
-  } catch (err) {
-    console.error('Database Error:', err);
-    throw new Error('Failed to fetch all customers.');
-  }
-}
-
-export async function fetchFilteredCustomers(query: string) {
-  try {
-    const data = await sql<CustomersTableType[]>`
-		SELECT
-		  customers.id,
-		  customers.name,
-		  customers.email,
-		  customers.image_url,
-		  COUNT(invoices.id) AS total_invoices,
-		  SUM(CASE WHEN invoices.status = 'pending' THEN invoices.amount ELSE 0 END) AS total_pending,
-		  SUM(CASE WHEN invoices.status = 'paid' THEN invoices.amount ELSE 0 END) AS total_paid
-		FROM customers
-		LEFT JOIN invoices ON customers.id = invoices.customer_id
-		WHERE
-		  customers.name ILIKE ${`%${query}%`} OR
-        customers.email ILIKE ${`%${query}%`}
-		GROUP BY customers.id, customers.name, customers.email, customers.image_url
-		ORDER BY customers.name ASC
-	  `;
-
-    const customers = data.map((customer) => ({
-      ...customer,
-      total_pending: formatCurrency(customer.total_pending),
-      total_paid: formatCurrency(customer.total_paid),
-    }));
-
-    return customers;
-  } catch (err) {
-    console.error('Database Error:', err);
-    throw new Error('Failed to fetch customer table.');
-  }
-}
+export const standings = [
+  { id: 1, team: 'Celtics', conference: 'East', wins: 58, losses: 24 },
+  { id: 2, team: 'Bucks', conference: 'East', wins: 54, losses: 28 },
+  { id: 3, team: 'Lakers', conference: 'West', wins: 48, losses: 34 },
+  { id: 4, team: 'Warriors', conference: 'West', wins: 46, losses: 36 },
+  { id: 5, team: 'Heat', conference: 'East', wins: 44, losses: 38 },
+  { id: 6, team: 'Nets', conference: 'East', wins: 42, losses: 40 },
+  { id: 7, team: 'Clippers', conference: 'West', wins: 40, losses: 42 },
+  { id: 8, team: 'Suns', conference: 'West', wins: 38, losses: 44 },
+  { id: 9, team: 'Jazz', conference: 'West', wins: 36, losses: 46 },
+  { id: 10, team: 'Mavericks', conference: 'West', wins: 34, losses: 48 },
+  { id: 11, team: 'Raptors', conference: 'East', wins: 32, losses: 50 },
+  { id: 12, team: '76ers', conference: 'East', wins: 30, losses: 52 },
+];
