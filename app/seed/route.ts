@@ -1,117 +1,122 @@
-import bcrypt from 'bcrypt';
 import postgres from 'postgres';
-import { invoices, customers, revenue, users } from '../lib/placeholder-data';
+import { teams, players, games, standings } from '../lib/seed-data';
 
-const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
+const connectionString =
+  process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
-async function seedUsers() {
-  await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
+if (!connectionString) {
+  throw new Error('Falta DATABASE_URL o POSTGRES_URL en las variables de entorno');
+}
+
+const sql = postgres(connectionString, { ssl: 'require' });
+
+async function seedTeams() {
   await sql`
-    CREATE TABLE IF NOT EXISTS users (
-      id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    CREATE TABLE IF NOT EXISTS teams (
+      id SERIAL PRIMARY KEY,
+      name VARCHAR(255) NOT NULL UNIQUE,
+      city VARCHAR(255) NOT NULL,
+      conference VARCHAR(20) NOT NULL,
+      wins INT NOT NULL DEFAULT 0,
+      losses INT NOT NULL DEFAULT 0
+    );
+  `;
+
+  await Promise.all(
+    teams.map((team) => sql`
+      INSERT INTO teams (name, city, conference, wins, losses)
+      VALUES (${team.name}, ${team.city}, ${team.conference}, ${team.wins}, ${team.losses})
+      ON CONFLICT (name) DO UPDATE SET
+        city = EXCLUDED.city,
+        conference = EXCLUDED.conference,
+        wins = EXCLUDED.wins,
+        losses = EXCLUDED.losses;
+    `),
+  );
+}
+
+async function seedPlayers() {
+  await sql`
+    CREATE TABLE IF NOT EXISTS players (
+      id SERIAL PRIMARY KEY,
       name VARCHAR(255) NOT NULL,
-      email TEXT NOT NULL UNIQUE,
-      password TEXT NOT NULL
+      team VARCHAR(255) NOT NULL,
+      position VARCHAR(20) NOT NULL,
+      ppg NUMERIC(4,1) NOT NULL DEFAULT 0,
+      UNIQUE (name, team)
     );
   `;
 
-  const insertedUsers = await Promise.all(
-    users.map(async (user) => {
-      const hashedPassword = await bcrypt.hash(user.password, 10);
-      return sql`
-        INSERT INTO users (id, name, email, password)
-        VALUES (${user.id}, ${user.name}, ${user.email}, ${hashedPassword})
-        ON CONFLICT (id) DO NOTHING;
-      `;
-    }),
+  await Promise.all(
+    players.map((player) => sql`
+      INSERT INTO players (name, team, position, ppg)
+      VALUES (${player.name}, ${player.team}, ${player.position}, ${player.ppg})
+      ON CONFLICT (name, team) DO UPDATE SET
+        position = EXCLUDED.position,
+        ppg = EXCLUDED.ppg;
+    `),
   );
-
-  return insertedUsers;
 }
 
-async function seedInvoices() {
-  await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
-
+async function seedGames() {
   await sql`
-    CREATE TABLE IF NOT EXISTS invoices (
-      id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-      customer_id UUID NOT NULL,
-      amount INT NOT NULL,
-      status VARCHAR(255) NOT NULL,
-      date DATE NOT NULL
+    CREATE TABLE IF NOT EXISTS games (
+      id SERIAL PRIMARY KEY,
+      away_team VARCHAR(255) NOT NULL,
+      home_team VARCHAR(255) NOT NULL,
+      date DATE NOT NULL,
+      time VARCHAR(10) NOT NULL,
+      UNIQUE (away_team, home_team, date, time)
     );
   `;
 
-  const insertedInvoices = await Promise.all(
-    invoices.map(
-      (invoice) => sql`
-        INSERT INTO invoices (customer_id, amount, status, date)
-        VALUES (${invoice.customer_id}, ${invoice.amount}, ${invoice.status}, ${invoice.date})
-        ON CONFLICT (id) DO NOTHING;
-      `,
-    ),
+  await Promise.all(
+    games.map((game) => sql`
+      INSERT INTO games (away_team, home_team, date, time)
+      VALUES (${game.awayTeam}, ${game.homeTeam}, ${game.date}, ${game.time})
+      ON CONFLICT (away_team, home_team, date, time) DO NOTHING;
+    `),
   );
-
-  return insertedInvoices;
 }
 
-async function seedCustomers() {
-  await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
-
+async function seedStandings() {
   await sql`
-    CREATE TABLE IF NOT EXISTS customers (
-      id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-      name VARCHAR(255) NOT NULL,
-      email VARCHAR(255) NOT NULL,
-      image_url VARCHAR(255) NOT NULL
+    CREATE TABLE IF NOT EXISTS standings (
+      id SERIAL PRIMARY KEY,
+      team VARCHAR(255) NOT NULL UNIQUE,
+      conference VARCHAR(20) NOT NULL,
+      wins INT NOT NULL DEFAULT 0,
+      losses INT NOT NULL DEFAULT 0
     );
   `;
 
-  const insertedCustomers = await Promise.all(
-    customers.map(
-      (customer) => sql`
-        INSERT INTO customers (id, name, email, image_url)
-        VALUES (${customer.id}, ${customer.name}, ${customer.email}, ${customer.image_url})
-        ON CONFLICT (id) DO NOTHING;
-      `,
-    ),
+  await Promise.all(
+    standings.map((row) => sql`
+      INSERT INTO standings (team, conference, wins, losses)
+      VALUES (${row.team}, ${row.conference}, ${row.wins}, ${row.losses})
+      ON CONFLICT (team) DO UPDATE SET
+        conference = EXCLUDED.conference,
+        wins = EXCLUDED.wins,
+        losses = EXCLUDED.losses;
+    `),
   );
-
-  return insertedCustomers;
-}
-
-async function seedRevenue() {
-  await sql`
-    CREATE TABLE IF NOT EXISTS revenue (
-      month VARCHAR(4) NOT NULL UNIQUE,
-      revenue INT NOT NULL
-    );
-  `;
-
-  const insertedRevenue = await Promise.all(
-    revenue.map(
-      (rev) => sql`
-        INSERT INTO revenue (month, revenue)
-        VALUES (${rev.month}, ${rev.revenue})
-        ON CONFLICT (month) DO NOTHING;
-      `,
-    ),
-  );
-
-  return insertedRevenue;
 }
 
 export async function GET() {
   try {
-    const result = await sql.begin((sql) => [
-      seedUsers(),
-      seedCustomers(),
-      seedInvoices(),
-      seedRevenue(),
-    ]);
+    await seedTeams();
+    await seedPlayers();
+    await seedGames();
+    await seedStandings();
 
-    return Response.json({ message: 'Database seeded successfully' });
+    return Response.json({
+      message: 'Base de datos creada y rellenada correctamente',
+    });
   } catch (error) {
-    return Response.json({ error }, { status: 500 });
+    console.error('Error al ejecutar seed:', error);
+    return Response.json(
+      { error: 'Error al crear o rellenar la base de datos' },
+      { status: 500 },
+    );
   }
 }

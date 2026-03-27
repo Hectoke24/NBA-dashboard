@@ -1,4 +1,4 @@
-import { players } from '@/app/lib/data';
+import { players } from '@/app/lib/seed-data';
 
 export default function TopPlayers() {
   return (
@@ -6,7 +6,7 @@ export default function TopPlayers() {
       <h2 className="mb-4 text-lg font-semibold text-gray-800">Jugadores destacados</h2>
 
       <div className="space-y-3">
-        {players.map((player) => (
+        {players.slice(0, 4).map((player) => (
           <div
             key={player.id}
             className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3"

@@ -1,4 +1,4 @@
-import { games } from '@/app/lib/data';
+import { games } from '@/app/lib/seed-data';
 
 export default function UpcomingGames() {
   return (
@@ -9,7 +9,7 @@ export default function UpcomingGames() {
       </div>
 
       <div className="space-y-3">
-        {games.map((game) => (
+        {games.slice(0, 4).map((game) => (
           <div
             key={game.id}
             className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3"

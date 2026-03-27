@@ -1,4 +1,4 @@
-import { standings } from '@/app/lib/data';
+import { standings } from '@/app/lib/seed-data';
 
 export default function StandingsPreview() {
   const east = standings.filter((team) => team.conference === 'East');
@@ -14,7 +14,7 @@ export default function StandingsPreview() {
             Este
           </h3>
           <div className="space-y-2">
-            {east.map((team) => (
+            {east.slice(0, 3).map((team) => (
               <div
                 key={team.id}
                 className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2"
@@ -33,7 +33,7 @@ export default function StandingsPreview() {
             Oeste
           </h3>
           <div className="space-y-2">
-            {west.map((team) => (
+            {west.slice(0, 3).map((team) => (
               <div
                 key={team.id}
                 className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2"

@@ -34,10 +34,9 @@ export default function NavLinks() {
             href={link.href}
             className={clsx(
               'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition',
-              {
-                'bg-blue-100 text-blue-700': isActive,
-                'text-gray-700 hover:bg-gray-100': !isActive,
-              }
+              isActive
+                ? 'bg-[#C8102E] text-white'
+                : 'text-white hover:bg-white/10'
             )}
           >
             <LinkIcon className="h-4 w-4" />

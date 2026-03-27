@@ -1,55 +1,56 @@
-'use client';
+import { fetchTeams } from '@/app/lib/data';
 
-import { useMemo, useState } from 'react';
-import TeamsGrid from '@/app/ui/dashboard/teams-grid';
-import { teams } from '@/app/lib/data';
-
-export default function Page() {
-  const [search, setSearch] = useState('');
-
-  const filteredTeams = useMemo(() => {
-    const term = search.toLowerCase().trim();
-
-    if (!term) return teams;
-
-    return teams.filter((team) => {
-      const fullName = `${team.city} ${team.name}`.toLowerCase();
-
-      return (
-        team.name.toLowerCase().includes(term) ||
-        team.city.toLowerCase().includes(term) ||
-        team.conference.toLowerCase().includes(term) ||
-        fullName.includes(term)
-      );
-    });
-  }, [search]);
+export default async function Page({
+  searchParams,
+}: {
+  searchParams?: Promise<{ query?: string }>;
+}) {
+  const params = await searchParams;
+  const query = params?.query || '';
+  const teams = await fetchTeams(query);
 
   return (
     <main className="p-6">
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-800">Equipos</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Consulta información general de los equipos NBA.
-          </p>
-        </div>
+      <h1 className="mb-4 text-2xl font-semibold text-gray-800">Equipos</h1>
 
-        <div className="w-full sm:w-72">
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar equipo..."
-            className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 outline-none placeholder:text-gray-400 focus:border-blue-400"
-          />
-        </div>
+      <form className="mb-6 max-w-xs">
+        <input
+          type="text"
+          name="query"
+          defaultValue={query}
+          placeholder="Buscar equipo..."
+          className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm"
+        />
+      </form>
+
+      <div className="overflow-x-auto rounded-2xl bg-white p-4 shadow-sm">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b text-left text-gray-500">
+              <th className="py-3">Equipo</th>
+              <th className="py-3">Ciudad</th>
+              <th className="py-3">Conferencia</th>
+              <th className="py-3">Victorias</th>
+              <th className="py-3">Derrotas</th>
+            </tr>
+          </thead>
+          <tbody>
+            {teams.map((team: any) => (
+              <tr key={team.id} className="border-b">
+                <td className="py-3 font-medium">{team.name}</td>
+                <td className="py-3">{team.city}</td>
+                <td className="py-3">{team.conference}</td>
+                <td className="py-3">{team.wins}</td>
+                <td className="py-3">{team.losses}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
-      {filteredTeams.length > 0 ? (
-        <TeamsGrid teams={filteredTeams} />
-      ) : (
-        <div className="rounded-2xl bg-white p-6 text-sm text-gray-500 shadow-sm ring-1 ring-gray-100">
-          No se encontraron equipos para tu búsqueda.
+      {teams.length === 0 && (
+        <div className="mt-4 rounded-xl bg-white p-4 shadow-sm">
+          No se encontraron equipos.
         </div>
       )}
     </main>
