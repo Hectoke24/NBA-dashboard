@@ -1,5 +1,30 @@
-## Next.js App Router Course - Starter
+# NBA Dashboard
 
-This is the starter template for the Next.js App Router Course. It contains the starting code for the dashboard application.
+Proyecto realizado con Next.js para mostrar información de la NBA en un dashboard web.
 
-For more information, see the [course curriculum](https://nextjs.org/learn) on the Next.js Website.
+## Contenido
+
+El dashboard incluye varias páginas:
+
+- Equipos
+- Jugadores
+- Juegos
+- Clasificación
+
+Los datos se cargan desde una base de datos PostgreSQL en Neon conectada con Vercel.
+
+## Tecnologías usadas
+
+- Next.js
+- React
+- Tailwind CSS
+- PostgreSQL
+- Neon
+- Vercel
+
+## Cómo ejecutar el proyecto
+
+Instalar dependencias:
+
+```bash
+pnpm install
